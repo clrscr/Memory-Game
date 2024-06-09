@@ -9,7 +9,15 @@ class GameSettings:
     bg_color = pygame.Color('black')
 
 
+
 class MemoryGame:
+    def __init__(self, height, width):
+        if height*width%2 != 0:
+            print("Invalid board size")
+
+
+
+class MemoryGameEngine:
     def __init__(self):
         pygame.init()
         self.screen = None
@@ -59,5 +67,5 @@ class MemoryGame:
 
 
 if __name__ == '__main__':
-    mg = MemoryGame()
+    mg = MemoryGameEngine()
     mg.run_game()
