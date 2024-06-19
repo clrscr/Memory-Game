@@ -11,8 +11,7 @@ class GameSettings:
 
 
 class MGCard(pygame.sprite.Sprite):
-    def __init__(self, screen):
-        print("Creating card...")
+    def __init__(self, screen, card_value):
         super().__init__()
         self.screen = screen
         if self.screen is None:
@@ -30,7 +29,8 @@ class MGCard(pygame.sprite.Sprite):
         self.rect.y = 0
 
         self.x = float(self.rect.x)
-        print("Card created successfully!...")
+
+        self.card_value = card_value
 
 
 class MemoryGame:
@@ -43,7 +43,7 @@ class MemoryGame:
         self.height = height
         self.game_board = list()
         self.settings = GameSettings()
-        self.engine = MemoryGameEngine(self.draw_board, self.settings)
+        self.engine = MemoryGameEngine(self.draw_board, self.handle_input, self.settings)
 
         print("Setting up cards")
         self.cards = pygame.sprite.Group()
@@ -62,8 +62,28 @@ class MemoryGame:
 
         if self.engine.screen is None:
             print("Failed to create game board!")
-        card = MGCard(self.engine.screen)
-        self.cards.add(card)
+        self._create_cards()
+
+    def _create_cards(self):
+        card = MGCard(self.engine.screen, 0)
+        card_width = card.rect.width
+        current_x = 1
+        current_y = 1
+        for j in range(self.height):
+            for k in range(self.width):
+                new_card = MGCard(self.engine.screen, self.game_board[j*self.width]+k)
+
+                new_card.x = current_x
+                new_card.rect.x = current_x
+
+                new_card.y = current_y
+                new_card.rect.y = current_y
+                self.cards.add(new_card)
+
+                current_x += 1.25 * card_width
+
+            current_x = 1
+            current_y += card.rect.height
 
     def start_game(self):
         self.engine.run_game()
@@ -73,9 +93,19 @@ class MemoryGame:
         self.cards.draw(self.engine.screen)
         pygame.display.flip()
 
+    def handle_input(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            clicked_card = [card for card
+                            in self.cards if card.rect.collidepoint(mouse_pos)]
+            print(clicked_card[0].card_value)
+
 
 class MemoryGameEngine:
-    def __init__(self, draw_function, settings):
+    def __init__(self, draw_function, input_handler, settings):
         pygame.init()
         self.screen = None
         self.clock = pygame.time.Clock()
@@ -84,6 +114,7 @@ class MemoryGameEngine:
         self.settings = settings
         self.setup_display()
         self.cards = pygame.sprite.Group()
+        self.input_handler = input_handler
         pygame.display.set_caption('Memory Game')
 
     def run_game(self):
@@ -92,13 +123,6 @@ class MemoryGameEngine:
             self._update_screen()
             self.clock.tick(60)
 
-    def _check_keydown_events(self, event):
-        if event.key == pygame.K_q:
-            exit()
-
-    def _check_keyup_events(self, event):
-        ...
-
     def _update_screen(self):
         self.draw_function()
 
@@ -106,8 +130,8 @@ class MemoryGameEngine:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
-            elif event.type == pygame.KEYDOWN:
-                self._check_keydown_events(event)
+            else:
+                self.input_handler(event)
 
     def setup_display(self):
         if self.settings.should_full_screen:
@@ -115,8 +139,8 @@ class MemoryGameEngine:
             self.settings.screen_width = self.screen.get_width()
             self.settings.screen_height = self.screen.get_height()
         else:
-            self.settings.screen_width = 1200
-            self.settings.screen_height = 800
+            self.settings.screen_width = 800
+            self.settings.screen_height = 900
             self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
 
 
