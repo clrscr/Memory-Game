@@ -2,7 +2,7 @@ import pygame
 from sys import exit
 from dataclasses import dataclass
 import random
-
+from mgengine import MemoryGameEngine
 
 card_image = pygame.image.load('card.jpg')
 font = None
@@ -35,7 +35,15 @@ class MGCard(pygame.sprite.Sprite):
         self.card_value = card_value
         self.is_flipped = False
 
-    def clicked(self):
+    def clicked(self, current_flipped):
+        new_flipped_count = current_flipped
+        if self.is_flipped:
+            new_flipped_count -= 1
+        else:
+            new_flipped_count += 1
+        if new_flipped_count > 2:
+            print("More than 2 cards flipped")
+            return 2
         self.is_flipped = not self.is_flipped
         if self.is_flipped:
             text_surface = font.render(str(self.card_value), True, font_color)
@@ -46,6 +54,10 @@ class MGCard(pygame.sprite.Sprite):
             self.image.blit(text_surface, text_rect)
         else:
             self.image = card_image
+        print(f"Flipped count is now {new_flipped_count}")
+        return new_flipped_count
+    def reset(self):
+        self.is_flipped = False
 
 
 class MemoryGame:
@@ -63,6 +75,8 @@ class MemoryGame:
         print("Setting up cards")
         self.cards = pygame.sprite.Group()
         self.create_board()
+        self.flipped_cards = 0
+        self.last_clicked_card = None
 
         global font
         font = pygame.font.SysFont('Arial', 20)
@@ -70,6 +84,7 @@ class MemoryGame:
         font_color = pygame.Color('black')
 
         card_image.convert()
+
 
         print("Game initialized")
 
@@ -120,51 +135,28 @@ class MemoryGame:
             if event.key == pygame.K_q:
                 exit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            clicked_card = [card for card
-                            in self.cards if card.rect.collidepoint(mouse_pos)]
-            clicked_card[0].clicked()
-            print(clicked_card[0].card_value)
+            self.card_clicked()
 
+    def card_clicked(self):
+        mouse_pos = pygame.mouse.get_pos()
+        clicked_card = [card for card
+                        in self.cards if card.rect.collidepoint(mouse_pos)]
+        if self.last_clicked_card is None:
+            self.last_clicked_card = clicked_card[0]
+        self.flipped_cards = clicked_card[0].clicked(self.flipped_cards)
+        print(clicked_card[0].card_value)
 
-class MemoryGameEngine:
-    def __init__(self, draw_function, input_handler, settings):
-        pygame.init()
-        self.screen = None
-        self.clock = pygame.time.Clock()
-        self.game_active = False
-        self.draw_function = draw_function
-        self.settings = settings
-        self.setup_display()
-        self.cards = pygame.sprite.Group()
-        self.input_handler = input_handler
-        pygame.display.set_caption('Memory Game')
+        if self.flipped_cards == 2:
+            self.check_cards(clicked_card[0])
 
-    def run_game(self):
-        while True:
-            self._check_events()
-            self._update_screen()
-            self.clock.tick(60)
+    def check_cards(self,card):
+        print(f"Checking {card.card_value} against {self.last_clicked_card.card_value}")
+        if self.last_clicked_card.card_value == card.card_value:
+            self.last_clicked_card.kill()
+            card.kill()
+            self.last_clicked_card = None
+            self.flipped_cards = 0
 
-    def _update_screen(self):
-        self.draw_function()
-
-    def _check_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                exit()
-            else:
-                self.input_handler(event)
-
-    def setup_display(self):
-        if self.settings.should_full_screen:
-            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-            self.settings.screen_width = self.screen.get_width()
-            self.settings.screen_height = self.screen.get_height()
-        else:
-            self.settings.screen_width = 800
-            self.settings.screen_height = 900
-            self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
 
 
 if __name__ == '__main__':
