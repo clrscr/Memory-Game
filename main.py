@@ -4,6 +4,9 @@ from dataclasses import dataclass
 import random
 
 
+card_image = pygame.image.load('card.jpg')
+font = None
+font_color = None
 @dataclass
 class GameSettings:
     should_full_screen: bool = False
@@ -17,8 +20,7 @@ class MGCard(pygame.sprite.Sprite):
         if self.screen is None:
             print("Failed to create card.")
 
-        self.image = pygame.image.load('card.jpg')
-        self.image = self.image.convert()
+        self.image = card_image
 
         if self.image is None:
             print("Failed to load image!!")
@@ -31,6 +33,19 @@ class MGCard(pygame.sprite.Sprite):
         self.x = float(self.rect.x)
 
         self.card_value = card_value
+        self.is_flipped = False
+
+    def clicked(self):
+        self.is_flipped = not self.is_flipped
+        if self.is_flipped:
+            text_surface = font.render(str(self.card_value), True, font_color)
+            text_rect = self.image.get_rect(center=self.image.get_rect().center)
+            self.image = text_surface
+            pygame.transform.smoothscale(self.image, card_image.get_size())
+            pygame.draw.rect(self.image, 'red', self.image.get_rect(), 1)
+            self.image.blit(text_surface, text_rect)
+        else:
+            self.image = card_image
 
 
 class MemoryGame:
@@ -48,6 +63,13 @@ class MemoryGame:
         print("Setting up cards")
         self.cards = pygame.sprite.Group()
         self.create_board()
+
+        global font
+        font = pygame.font.SysFont('Arial', 20)
+        global font_color
+        font_color = pygame.Color('black')
+
+        card_image.convert()
 
         print("Game initialized")
 
@@ -71,7 +93,7 @@ class MemoryGame:
         current_y = 1
         for j in range(self.height):
             for k in range(self.width):
-                new_card = MGCard(self.engine.screen, self.game_board[j*self.width]+k)
+                new_card = MGCard(self.engine.screen, self.game_board[j * self.width] + k)
 
                 new_card.x = current_x
                 new_card.rect.x = current_x
@@ -101,6 +123,7 @@ class MemoryGame:
             mouse_pos = pygame.mouse.get_pos()
             clicked_card = [card for card
                             in self.cards if card.rect.collidepoint(mouse_pos)]
+            clicked_card[0].clicked()
             print(clicked_card[0].card_value)
 
 
