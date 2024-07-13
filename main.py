@@ -7,6 +7,9 @@ from mgengine import MemoryGameEngine
 card_image = pygame.image.load('card.jpg')
 font = None
 font_color = None
+wait_time = 60 * 2
+
+
 @dataclass
 class GameSettings:
     should_full_screen: bool = False
@@ -46,18 +49,23 @@ class MGCard(pygame.sprite.Sprite):
             return 2
         self.is_flipped = not self.is_flipped
         if self.is_flipped:
-            text_surface = font.render(str(self.card_value), True, font_color)
-            text_rect = self.image.get_rect(center=self.image.get_rect().center)
-            self.image = text_surface
-            pygame.transform.smoothscale(self.image, card_image.get_size())
-            pygame.draw.rect(self.image, 'red', self.image.get_rect(), 1)
-            self.image.blit(text_surface, text_rect)
+            self.show_card()
         else:
             self.image = card_image
         print(f"Flipped count is now {new_flipped_count}")
         return new_flipped_count
+
+    def show_card(self):
+        text_surface = font.render(str(self.card_value), True, font_color)
+        text_rect = self.image.get_rect(center=self.image.get_rect().center)
+        self.image = text_surface
+        pygame.transform.smoothscale(self.image, card_image.get_size())
+        pygame.draw.rect(self.image, 'red', self.image.get_rect(), 1)
+        self.image.blit(text_surface, text_rect)
+
     def reset(self):
         self.is_flipped = False
+        self.image = card_image
 
 
 class MemoryGame:
@@ -70,7 +78,8 @@ class MemoryGame:
         self.height = height
         self.game_board = list()
         self.settings = GameSettings()
-        self.engine = MemoryGameEngine(self.draw_board, self.handle_input, self.settings)
+        self.engine = MemoryGameEngine(self.draw_board, self.handle_input, self.update_state,
+                                       self.settings, "Memory Game")
 
         print("Setting up cards")
         self.cards = pygame.sprite.Group()
@@ -78,13 +87,16 @@ class MemoryGame:
         self.flipped_cards = 0
         self.last_clicked_card = None
 
+        self.has_won = False
+        self.reset_next_refresh = False
+        self.wait_counter = 0
+
         global font
         font = pygame.font.SysFont('Arial', 20)
         global font_color
         font_color = pygame.Color('black')
 
         card_image.convert()
-
 
         print("Game initialized")
 
@@ -108,7 +120,9 @@ class MemoryGame:
         current_y = 1
         for j in range(self.height):
             for k in range(self.width):
-                new_card = MGCard(self.engine.screen, self.game_board[j * self.width] + k)
+                idx = j * self.width + k
+                print(f"idx: {idx}, value {self.game_board[idx]}")
+                new_card = MGCard(self.engine.screen, self.game_board[idx])
 
                 new_card.x = current_x
                 new_card.rect.x = current_x
@@ -134,13 +148,22 @@ class MemoryGame:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q:
                 exit()
+            elif event.key == pygame.K_w:
+                for card in self.cards:
+                    card.show_card()
+            elif event.key == pygame.K_s:
+                self.cards.empty()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             self.card_clicked()
 
     def card_clicked(self):
+        if self.reset_next_refresh:
+            return
         mouse_pos = pygame.mouse.get_pos()
         clicked_card = [card for card
                         in self.cards if card.rect.collidepoint(mouse_pos)]
+        if not clicked_card:
+            return
         if self.last_clicked_card is None:
             self.last_clicked_card = clicked_card[0]
         self.flipped_cards = clicked_card[0].clicked(self.flipped_cards)
@@ -149,7 +172,7 @@ class MemoryGame:
         if self.flipped_cards == 2:
             self.check_cards(clicked_card[0])
 
-    def check_cards(self,card):
+    def check_cards(self, card):
         print(f"Checking {card.card_value} against {self.last_clicked_card.card_value}")
         if self.last_clicked_card.card_value == card.card_value:
             self.last_clicked_card.kill()
@@ -157,6 +180,25 @@ class MemoryGame:
             self.last_clicked_card = None
             self.flipped_cards = 0
 
+    def update_state(self):
+        if len(self.cards) == 0:
+            self.has_won = True
+            self.engine.should_pause = True
+            print("Game over!")
+
+        if self.flipped_cards == 2 and self.reset_next_refresh:
+            print("Should reset")
+            for card in self.cards:
+                card.reset()
+            self.flipped_cards = 0
+            self.reset_next_refresh = False
+            self.last_clicked_card = None
+            self.wait_counter = 0
+        elif self.flipped_cards == 2:
+            if self.wait_counter != wait_time:
+                self.wait_counter += 1
+            else:
+                self.reset_next_refresh = True
 
 
 if __name__ == '__main__':
