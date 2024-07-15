@@ -1,5 +1,6 @@
 import pygame.font
 
+
 class MeButton:
     def __init__(self, game, msg):
         self.game = game
@@ -17,9 +18,9 @@ class MeButton:
         self._prep_msg(msg)
 
     def _prep_msg(self, msg):
-         self.msg_img = self.font.render(msg, True, self.text_color, self.button_color)
-         self.msg_img_rect = self.msg_img.get_rect()
-         self.msg_img_rect.center = self.rect.center
+        self.msg_img = self.font.render(msg, True, self.text_color, self.button_color)
+        self.msg_img_rect = self.msg_img.get_rect()
+        self.msg_img_rect.center = self.rect.center
 
     def draw_button(self):
         self.screen.fill(self.button_color, self.rect)
