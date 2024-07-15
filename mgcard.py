@@ -46,12 +46,12 @@ class MGCard(pygame.sprite.Sprite):
     def _prep_card(self):
         self.text_surface = self.font.render(str(self.card_value),
                                              True,
-                                             pygame.Color('red'),pygame.Color(0, 0, 0))
+                                             pygame.Color('red'), pygame.Color(0, 0, 0))
 
     def show_card(self):
         self.rect.x = self.rect.centerx
         self.rect.y = self.rect.centery
-        self.screen.fill(pygame.Color('black'),card_image.get_rect())
+        self.screen.fill(pygame.Color('black'), card_image.get_rect())
         self.screen.blit(self.text_surface, self.rect)
 
     def reset(self):

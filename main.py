@@ -1,14 +1,13 @@
-import pygame
-from sys import exit
-from dataclasses import dataclass
 import random
+from dataclasses import dataclass
+from sys import exit
 
+import pygame
+
+from mebutton import MeButton
 from mgcard import MGCard, card_image
 from mgengine import MemoryGameEngine
-from mebutton import MeButton
 
-font = None
-font_color = None
 wait_time = 60 * 2
 
 
@@ -19,9 +18,8 @@ class GameSettings:
 
 
 class GameOverScreen:
-    def __init__(self, game):
-        self.game = game
-        self.screen = game.engine.screen
+    def __init__(self, screen):
+        self.screen = screen
         self.screen_rect = self.screen.get_rect()
 
         self.width, self.height = 200, 50
@@ -57,19 +55,18 @@ class MemoryGame:
 
         print("Setting up cards")
         self.cards = pygame.sprite.Group()
-        self.create_board()
         self.flipped_cards = 0
         self.last_clicked_card = None
+        self.create_board()
         card_image.convert()
 
+        print("Setting up game state")
         self.has_won = False
         self.reset_next_refresh = False
         self.wait_counter = 0
 
-        global font
-        font = pygame.font.SysFont('Arial', 20)
-        global font_color
-        font_color = pygame.Color('black')
+        self.font = pygame.font.SysFont('Arial', 20)
+        self.font_color = pygame.Color('black')
 
         self.attempts_count = 0
 
@@ -77,7 +74,7 @@ class MemoryGame:
         self.play_button = MeButton(self, "Play")
         self.is_active = False
 
-        self.go_screen = GameOverScreen(self)
+        self.go_screen = GameOverScreen(self.engine.screen)
 
         print("Game initialized")
 
@@ -87,23 +84,23 @@ class MemoryGame:
         self.game_board = [random.randrange(0, 99) for _ in range(int(board_size / 2))]
         self.game_board.extend(self.game_board)
         random.shuffle(self.game_board)
-        print(len(self.game_board))
-        print(self.game_board)
 
         if self.engine.screen is None:
             print("Failed to create game board!")
+
         self._create_cards()
 
     def _create_cards(self):
-        card = MGCard(self.engine.screen, 0,0,0)
+        card = MGCard(self.engine.screen, 0, 0, 0)
         card_width = card.rect.width
         current_x = 1
         current_y = 1
+
         for j in range(self.height):
             for k in range(self.width):
                 idx = j * self.width + k
                 print(f"idx: {idx}, value {self.game_board[idx]}")
-                new_card = MGCard(self.engine.screen, self.game_board[idx],current_x,current_y)
+                new_card = MGCard(self.engine.screen, self.game_board[idx], current_x, current_y)
 
                 new_card.x = current_x
                 new_card.rect.x = current_x
@@ -141,11 +138,12 @@ class MemoryGame:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q:
                 exit()
-            elif event.key == pygame.K_w:
-                for card in self.cards:
-                    card.show_card()
-            elif event.key == pygame.K_s:
-                self.cards.empty()
+            # Commenting on debug codes
+            # elif event.key == pygame.K_w:
+            #     for card in self.cards:
+            #         card.show_card()
+            # elif event.key == pygame.K_s:
+            #     self.cards.empty()
             elif event.key == pygame.K_r:
                 self.reset_game()
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -161,24 +159,26 @@ class MemoryGame:
     def card_clicked(self):
         if self.reset_next_refresh:
             return
+
         mouse_pos = pygame.mouse.get_pos()
         clicked_card = [card for card
                         in self.cards if card.rect.collidepoint(mouse_pos)]
         if not clicked_card:
             return
+
         if self.last_clicked_card is None:
             self.last_clicked_card = clicked_card[0]
+
         self.flipped_cards = clicked_card[0].clicked(self.flipped_cards)
-        print(clicked_card[0].card_value)
 
         if self.flipped_cards == 2:
             self.check_cards(clicked_card[0])
 
     def check_cards(self, card):
-        print(f"Checking {card.card_value} against {self.last_clicked_card.card_value}")
         if self.last_clicked_card.card_value == card.card_value:
             self.last_clicked_card.kill()
             card.kill()
+
             self.last_clicked_card = None
             self.flipped_cards = 0
             self.update_attempts()
@@ -189,7 +189,6 @@ class MemoryGame:
             self.is_active = False
 
         if self.flipped_cards == 2 and self.reset_next_refresh:
-            print("Should reset")
             for card in self.cards:
                 card.reset()
             self.flipped_cards = 0
@@ -197,7 +196,6 @@ class MemoryGame:
             self.last_clicked_card = None
             self.wait_counter = 0
             self.update_attempts()
-            print(f"Attempts count is now {self.attempts_count}")
         elif self.flipped_cards == 2:
             if self.wait_counter != wait_time:
                 self.wait_counter += 1
@@ -218,12 +216,16 @@ class MemoryGame:
 
 
 class Scoreboard:
-    def __init__(self, mgGame: MemoryGame):
-        self.screen = mgGame.engine.screen
+    def __init__(self, mg_game: MemoryGame):
+        self.screen = mg_game.engine.screen
         self.screen_rect = self.screen.get_rect()
-        self.game = mgGame
+        self.game = mg_game
         self.text_color = (30, 30, 30)
         self.font = pygame.font.SysFont('Arial', 24)
+
+        self.score_image = None
+        self.score_rect = None
+
         self.prep_score()
 
     def prep_score(self):
