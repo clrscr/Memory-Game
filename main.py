@@ -16,6 +16,7 @@ class GameSettings:
     bg_color = pygame.Color('white')
 
 
+
 class MGCard(pygame.sprite.Sprite):
     def __init__(self, screen, card_value):
         super().__init__()
@@ -98,6 +99,10 @@ class MemoryGame:
 
         card_image.convert()
 
+        self.attempts_count = 0
+
+        self.sb = Scoreboard(self)
+
         print("Game initialized")
 
     def create_board(self):
@@ -142,6 +147,7 @@ class MemoryGame:
     def draw_board(self):
         self.engine.screen.fill(self.settings.bg_color)
         self.cards.draw(self.engine.screen)
+        self.sb.show_score()
         pygame.display.flip()
 
     def handle_input(self, event):
@@ -153,6 +159,8 @@ class MemoryGame:
                     card.show_card()
             elif event.key == pygame.K_s:
                 self.cards.empty()
+            elif event.key == pygame.K_r:
+                self.reset_game()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             self.card_clicked()
 
@@ -179,6 +187,7 @@ class MemoryGame:
             card.kill()
             self.last_clicked_card = None
             self.flipped_cards = 0
+            self.update_attempts()
 
     def update_state(self):
         if len(self.cards) == 0:
@@ -194,12 +203,45 @@ class MemoryGame:
             self.reset_next_refresh = False
             self.last_clicked_card = None
             self.wait_counter = 0
+            self.update_attempts()
+            print(f"Attempts count is now {self.attempts_count}")
         elif self.flipped_cards == 2:
             if self.wait_counter != wait_time:
                 self.wait_counter += 1
             else:
                 self.reset_next_refresh = True
 
+    def update_attempts(self):
+        self.attempts_count += 1
+        self.sb.prep_score()
+
+    def reset_game(self):
+        self.cards.empty()
+        self.attempts_count = 0
+        self.has_won = False
+        self.last_clicked_card = None
+        self.flipped_cards = 0
+        self.create_board()
+
+
+class Scoreboard():
+    def __init__(self,mgGame:MemoryGame):
+        self.screen = mgGame.engine.screen
+        self.screen_rect = self.screen.get_rect()
+        self.game = mgGame
+        self.text_color = (30,30,30)
+        self.font = pygame.font.SysFont('Arial', 24)
+        self.prep_score()
+
+    def prep_score(self):
+        score_str = str(self.game.attempts_count)
+        self.score_imge = self.font.render(score_str, True, self.text_color)
+        self.score_rect = self.score_imge.get_rect()
+        self.score_rect.right = self.screen_rect.right - 20
+        self.score_rect.top = 20
+
+    def show_score(self):
+        self.screen.blit(self.score_imge, self.score_rect)
 
 if __name__ == '__main__':
     mg = MemoryGame()
