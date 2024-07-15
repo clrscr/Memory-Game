@@ -99,7 +99,6 @@ class MemoryGame:
         for j in range(self.height):
             for k in range(self.width):
                 idx = j * self.width + k
-                print(f"idx: {idx}, value {self.game_board[idx]}")
                 new_card = MGCard(self.engine.screen, self.game_board[idx], current_x, current_y)
 
                 new_card.x = current_x

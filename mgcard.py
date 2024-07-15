@@ -1,6 +1,8 @@
 import pygame
+from pathlib import Path
 
-card_image = pygame.image.load('card.jpg')
+p = Path(__file__).resolve().with_name("card.jpg")
+card_image = pygame.image.load(p)
 
 
 class MGCard(pygame.sprite.Sprite):
@@ -39,8 +41,6 @@ class MGCard(pygame.sprite.Sprite):
             self.image = card_image
             self.rect.x = self.og_x
             self.rect.y = self.og_y
-
-        print(f"Flipped count is now {new_flipped_count}")
         return new_flipped_count
 
     def _prep_card(self):
