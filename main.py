@@ -16,7 +16,6 @@ class GameSettings:
     bg_color = pygame.Color('white')
 
 
-
 class MGCard(pygame.sprite.Sprite):
     def __init__(self, screen, card_value):
         super().__init__()
@@ -224,24 +223,25 @@ class MemoryGame:
         self.create_board()
 
 
-class Scoreboard():
-    def __init__(self,mgGame:MemoryGame):
+class Scoreboard:
+    def __init__(self, mgGame: MemoryGame):
         self.screen = mgGame.engine.screen
         self.screen_rect = self.screen.get_rect()
         self.game = mgGame
-        self.text_color = (30,30,30)
+        self.text_color = (30, 30, 30)
         self.font = pygame.font.SysFont('Arial', 24)
         self.prep_score()
 
     def prep_score(self):
         score_str = str(self.game.attempts_count)
-        self.score_imge = self.font.render(score_str, True, self.text_color)
-        self.score_rect = self.score_imge.get_rect()
+        self.score_image = self.font.render(score_str, True, self.text_color)
+        self.score_rect = self.score_image.get_rect()
         self.score_rect.right = self.screen_rect.right - 20
         self.score_rect.top = 20
 
     def show_score(self):
-        self.screen.blit(self.score_imge, self.score_rect)
+        self.screen.blit(self.score_image, self.score_rect)
+
 
 if __name__ == '__main__':
     mg = MemoryGame()

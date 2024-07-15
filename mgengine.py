@@ -1,6 +1,8 @@
 import pygame
+
+
 class MemoryGameEngine:
-    def __init__(self, draw_function, input_handler, update_state, settings,window_title):
+    def __init__(self, draw_function, input_handler, update_state, settings, window_title):
         pygame.init()
         self.screen = None
         self.clock = pygame.time.Clock()
