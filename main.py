@@ -2,10 +2,11 @@ import pygame
 from sys import exit
 from dataclasses import dataclass
 import random
+
+from mgcard import MGCard, card_image
 from mgengine import MemoryGameEngine
 from mebutton import MeButton
 
-card_image = pygame.image.load('card.jpg')
 font = None
 font_color = None
 wait_time = 60 * 2
@@ -41,55 +42,6 @@ class GameOverScreen:
         self.screen.blit(self.msg_img, self.msg_img_rect)
 
 
-class MGCard(pygame.sprite.Sprite):
-    def __init__(self, screen, card_value):
-        super().__init__()
-        self.screen = screen
-        self.image = card_image
-        self.rect = self.image.get_rect()
-        self.card_value = card_value
-        self.is_flipped = False
-        self.font = pygame.font.SysFont(None, 48)
-
-        self._prep_card()
-
-    def clicked(self, current_flipped):
-        new_flipped_count = current_flipped
-        if self.is_flipped:
-            new_flipped_count -= 1
-        else:
-            new_flipped_count += 1
-
-        if new_flipped_count > 2:
-            print("More than 2 cards flipped")
-            return 2
-
-        self.is_flipped = not self.is_flipped
-
-        if self.is_flipped:
-            self.image = self.text_surface
-            self.show_card()
-        else:
-            self.image = card_image
-        print(f"Flipped count is now {new_flipped_count}")
-        return new_flipped_count
-
-    def _prep_card(self):
-        self.text_surface = self.font.render(str(self.card_value),
-                                             True,
-                                             pygame.Color('red'))
-
-    def show_card(self):
-        self.rect.x = self.rect.centerx
-        self.rect.y = self.rect.centery
-        print(self.rect)
-        self.screen.blit(self.text_surface, self.rect)
-
-    def reset(self):
-        self.is_flipped = False
-        self.image = card_image
-
-
 class MemoryGame:
     def __init__(self, height=4, width=4):
         if height * width % 2 != 0:
@@ -108,6 +60,7 @@ class MemoryGame:
         self.create_board()
         self.flipped_cards = 0
         self.last_clicked_card = None
+        card_image.convert()
 
         self.has_won = False
         self.reset_next_refresh = False
@@ -117,8 +70,6 @@ class MemoryGame:
         font = pygame.font.SysFont('Arial', 20)
         global font_color
         font_color = pygame.Color('black')
-
-        card_image.convert()
 
         self.attempts_count = 0
 
@@ -144,7 +95,7 @@ class MemoryGame:
         self._create_cards()
 
     def _create_cards(self):
-        card = MGCard(self.engine.screen, 0)
+        card = MGCard(self.engine.screen, 0,0,0)
         card_width = card.rect.width
         current_x = 1
         current_y = 1
@@ -152,7 +103,7 @@ class MemoryGame:
             for k in range(self.width):
                 idx = j * self.width + k
                 print(f"idx: {idx}, value {self.game_board[idx]}")
-                new_card = MGCard(self.engine.screen, self.game_board[idx])
+                new_card = MGCard(self.engine.screen, self.game_board[idx],current_x,current_y)
 
                 new_card.x = current_x
                 new_card.rect.x = current_x
