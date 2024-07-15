@@ -3,6 +3,7 @@ from sys import exit
 from dataclasses import dataclass
 import random
 from mgengine import MemoryGameEngine
+from mebutton import MeButton
 
 card_image = pygame.image.load('card.jpg')
 font = None
@@ -15,6 +16,29 @@ class GameSettings:
     should_full_screen: bool = False
     bg_color = pygame.Color('white')
 
+
+class GameOverScreen:
+    def __init__(self, game):
+        self.game = game
+        self.screen = game.engine.screen
+        self.screen_rect = self.screen.get_rect()
+
+        self.width, self.height = 200, 50
+        self.button_color = pygame.Color('white')
+        self.text_color = (0, 0, 0)
+        self.font = pygame.font.SysFont(None, 128)
+
+        self.rect = pygame.Rect(0, 0, self.width, self.height)
+        self.rect.center = self.screen_rect.center
+
+        self.msg_img = self.font.render("You won!!", True, self.text_color, self.button_color)
+        self.msg_img_rect = self.msg_img.get_rect()
+        self.msg_img_rect.center = self.rect.center
+        self.msg_img_rect.centery -= 200
+
+    def draw_go_screen(self):
+        self.screen.fill(self.button_color, self.rect)
+        self.screen.blit(self.msg_img, self.msg_img_rect)
 
 class MGCard(pygame.sprite.Sprite):
     def __init__(self, screen, card_value):
@@ -101,6 +125,10 @@ class MemoryGame:
         self.attempts_count = 0
 
         self.sb = Scoreboard(self)
+        self.play_button = MeButton(self, "Play")
+        self.is_active = False
+
+        self.go_screen = GameOverScreen(self)
 
         print("Game initialized")
 
@@ -144,9 +172,20 @@ class MemoryGame:
         self.engine.run_game()
 
     def draw_board(self):
-        self.engine.screen.fill(self.settings.bg_color)
-        self.cards.draw(self.engine.screen)
-        self.sb.show_score()
+
+        if self.has_won:
+            self.engine.screen.fill(self.settings.bg_color)
+            self.cards.draw(self.engine.screen)
+            self.go_screen.draw_go_screen()
+            self.is_active = False
+        else:
+            self.engine.screen.fill(self.settings.bg_color)
+            self.cards.draw(self.engine.screen)
+            self.sb.show_score()
+
+        if not self.is_active:
+            self.play_button.draw_button()
+
         pygame.display.flip()
 
     def handle_input(self, event):
@@ -161,7 +200,14 @@ class MemoryGame:
             elif event.key == pygame.K_r:
                 self.reset_game()
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            self.card_clicked()
+            if self.is_active:
+                self.card_clicked()
+            else:
+                mouse_pos = pygame.mouse.get_pos()
+                if self.play_button.rect.collidepoint(mouse_pos):
+                    self.is_active = True
+                    self.engine.should_pause = False
+                    self.reset_game()
 
     def card_clicked(self):
         if self.reset_next_refresh:
@@ -191,8 +237,7 @@ class MemoryGame:
     def update_state(self):
         if len(self.cards) == 0:
             self.has_won = True
-            self.engine.should_pause = True
-            print("Game over!")
+            self.is_active = False
 
         if self.flipped_cards == 2 and self.reset_next_refresh:
             print("Should reset")
