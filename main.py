@@ -40,27 +40,18 @@ class GameOverScreen:
         self.screen.fill(self.button_color, self.rect)
         self.screen.blit(self.msg_img, self.msg_img_rect)
 
+
 class MGCard(pygame.sprite.Sprite):
     def __init__(self, screen, card_value):
         super().__init__()
         self.screen = screen
-        if self.screen is None:
-            print("Failed to create card.")
-
         self.image = card_image
-
-        if self.image is None:
-            print("Failed to load image!!")
-
         self.rect = self.image.get_rect()
-
-        self.rect.x = 0
-        self.rect.y = 0
-
-        self.x = float(self.rect.x)
-
         self.card_value = card_value
         self.is_flipped = False
+        self.font = pygame.font.SysFont(None, 48)
+
+        self._prep_card()
 
     def clicked(self, current_flipped):
         new_flipped_count = current_flipped
@@ -68,24 +59,31 @@ class MGCard(pygame.sprite.Sprite):
             new_flipped_count -= 1
         else:
             new_flipped_count += 1
+
         if new_flipped_count > 2:
             print("More than 2 cards flipped")
             return 2
+
         self.is_flipped = not self.is_flipped
+
         if self.is_flipped:
+            self.image = self.text_surface
             self.show_card()
         else:
             self.image = card_image
         print(f"Flipped count is now {new_flipped_count}")
         return new_flipped_count
 
+    def _prep_card(self):
+        self.text_surface = self.font.render(str(self.card_value),
+                                             True,
+                                             pygame.Color('red'))
+
     def show_card(self):
-        text_surface = font.render(str(self.card_value), True, font_color)
-        text_rect = self.image.get_rect(center=self.image.get_rect().center)
-        self.image = text_surface
-        pygame.transform.smoothscale(self.image, card_image.get_size())
-        pygame.draw.rect(self.image, 'red', self.image.get_rect(), 1)
-        self.image.blit(text_surface, text_rect)
+        self.rect.x = self.rect.centerx
+        self.rect.y = self.rect.centery
+        print(self.rect)
+        self.screen.blit(self.text_surface, self.rect)
 
     def reset(self):
         self.is_flipped = False
